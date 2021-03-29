@@ -5,7 +5,7 @@
 ################################################################################
 
 MBEDTLS_SITE = https://tls.mbed.org/code/releases
-MBEDTLS_VERSION = 2.16.6
+MBEDTLS_VERSION = 2.16.3
 MBEDTLS_SOURCE = mbedtls-$(MBEDTLS_VERSION)-apache.tgz
 MBEDTLS_CONF_OPTS = \
 	-DENABLE_PROGRAMS=$(if $(BR2_PACKAGE_MBEDTLS_PROGRAMS),ON,OFF) \
@@ -22,6 +22,7 @@ define MBEDTLS_ENABLE_THREADING
 	$(SED) "s://#define MBEDTLS_THREADING_PTHREAD:#define MBEDTLS_THREADING_PTHREAD:" \
 		$(@D)/include/mbedtls/config.h
 endef
+
 MBEDTLS_POST_PATCH_HOOKS += MBEDTLS_ENABLE_THREADING
 ifeq ($(BR2_STATIC_LIBS),y)
 MBEDTLS_CONF_OPTS += -DLINK_WITH_PTHREAD=ON
@@ -60,6 +61,21 @@ define MBEDTLS_DISABLE_ASM
 		$(@D)/include/mbedtls/config.h
 endef
 
+define MBEDTLS_DISABLE_CERTS_C
+	$(SED) '/^#define MBEDTLS_CERTS_C/d' \
+		$(@D)/include/mbedtls/config.h
+endef 
+
+define MBEDTLS_ENABLE_ECJPAKE_C
+	$(SED) "s://#define MBEDTLS_ECJPAKE_C:#define MBEDTLS_ECJPAKE_C:" \
+		$(@D)/include/mbedtls/config.h
+endef
+
+define MBEDTLS_ENABLE_KEY_EXCHANGE_ECJPAKE
+	$(SED) "s://#define MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED:#define MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED:" \
+		$(@D)/include/mbedtls/config.h
+endef
+
 # ARM in thumb mode breaks debugging with asm optimizations
 # Microblaze asm optimizations are broken in general
 # MIPS R6 asm is not yet supported
@@ -68,5 +84,7 @@ MBEDTLS_POST_CONFIGURE_HOOKS += MBEDTLS_DISABLE_ASM
 else ifeq ($(BR2_microblaze)$(BR2_MIPS_CPU_MIPS32R6)$(BR2_MIPS_CPU_MIPS64R6),y)
 MBEDTLS_POST_CONFIGURE_HOOKS += MBEDTLS_DISABLE_ASM
 endif
+
+MBEDTLS_POST_CONFIGURE_HOOKS += MBEDTLS_DISABLE_CERTS_C MBEDTLS_ENABLE_ECJPAKE_C MBEDTLS_ENABLE_KEY_EXCHANGE_ECJPAKE
 
 $(eval $(cmake-package))
